@@ -6,7 +6,8 @@ function FEM(initpos, tri){
 	this.pos = numeric.mul(initpos,1);      // 節点現在位置
 	this.initpos = numeric.mul(initpos,1);  // 節点初期位置
 
-	this.pos.push([0,0]);	// ゴミを追加、こいつを固定点にすることでなぜか解が安定する
+	this.pos.push([0,0]);	// ゴミを追加、こいつを固定点にすることで解が安定する
+							// 行列計算の中でサイズゼロの行列が生じることを防ぐ
 	this.initpos.push([0,0]);
 
 	this.tri = numeric.mul(tri, 1); // 三角形要素の節点リスト

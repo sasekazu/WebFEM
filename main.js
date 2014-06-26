@@ -48,43 +48,51 @@ $(document).ready(function () {
 	//scene.add(lightHelper);
 
 
-	var brain = new THREE.Geometry();
+	var niku = new THREE.Geometry();
 	var mesh = new RectangleMesh(200, 200, 5, 5);
 	var fem = new FEM(mesh.Pos, mesh.Tri);
 	var thickness = 50;
 	// 上面の頂点
 	for(var i = 0; i < fem.posNum; i++)
-		brain.vertices.push(new THREE.Vector3(fem.pos[i][0], fem.pos[i][1], thickness * 0.5));
+		niku.vertices.push(new THREE.Vector3(fem.pos[i][0], fem.pos[i][1], thickness * 0.5));
 	// 下面の頂点
 	for(var i = 0; i < fem.posNum; i++)
-		brain.vertices.push(new THREE.Vector3(fem.pos[i][0], fem.pos[i][1], -thickness * 0.5));
-
+		niku.vertices.push(new THREE.Vector3(fem.pos[i][0], fem.pos[i][1], -thickness * 0.5));
 	// 面
+	var ed = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
 	for(var i = 0; i < fem.triNum; i++) {
-		brain.faces.push(new THREE.Face3(fem.tri[i][0], fem.tri[i][1], fem.tri[i][2]));
-		brain.faces.push(new THREE.Face3(fem.tri[i][0] + fem.posNum, fem.tri[i][2] + fem.posNum, fem.tri[i][1] + fem.posNum));
-		// 側面
-		brain.faces.push(new THREE.Face3(fem.tri[i][1], fem.tri[i][0], fem.tri[i][0] + fem.posNum));
-		brain.faces.push(new THREE.Face3(fem.tri[i][1], fem.tri[i][0] + fem.posNum, fem.tri[i][1] + fem.posNum));
-		brain.faces.push(new THREE.Face3(fem.tri[i][2], fem.tri[i][1], fem.tri[i][1] + fem.posNum));
-		brain.faces.push(new THREE.Face3(fem.tri[i][2], fem.tri[i][1] + fem.posNum, fem.tri[i][2] + fem.posNum));
-		brain.faces.push(new THREE.Face3(fem.tri[i][0], fem.tri[i][2], fem.tri[i][2] + fem.posNum));
-		brain.faces.push(new THREE.Face3(fem.tri[i][0], fem.tri[i][2] + fem.posNum, fem.tri[i][0] + fem.posNum));
+		niku.faces.push(new THREE.Face3(fem.tri[i][0], fem.tri[i][1], fem.tri[i][2]));
+		niku.faces.push(new THREE.Face3(fem.tri[i][0] + fem.posNum, fem.tri[i][2] + fem.posNum, fem.tri[i][1] + fem.posNum));
+		// 側面 長方形メッシュであることを仮定し、左右上下の端に位置する頂点を用いてポリゴンを作成
+		for(var j=0; j<3; j++){
+			ed[0].x = fem.pos[fem.tri[i][(j+1)%3]][0];
+			ed[0].y = fem.pos[fem.tri[i][(j+1)%3]][1];
+			ed[1].x = fem.pos[fem.tri[i][j]][0];
+			ed[1].y = fem.pos[fem.tri[i][j]][1];
+			if(
+				(ed[0].x == mesh.minx || ed[0].x == mesh.maxx || ed[0].y == mesh.miny || ed[0].y == mesh.maxy)
+				&&
+				(ed[1].x == mesh.minx || ed[1].x == mesh.maxx || ed[1].y == mesh.miny || ed[1].y == mesh.maxy)
+			){
+				niku.faces.push(new THREE.Face3(fem.tri[i][(j + 1) % 3], fem.tri[i][j],              fem.tri[i][j] + fem.posNum));
+				niku.faces.push(new THREE.Face3(fem.tri[i][(j + 1) % 3], fem.tri[i][j] + fem.posNum, fem.tri[i][(j + 1) % 3] + fem.posNum));
+			}
+		}
 	}
 
 
-	var brainMaterial = new THREE.MeshPhongMaterial({
+	var nikuMaterial = new THREE.MeshPhongMaterial({
 		color: 0xeb7988, specular: 0xffffff, shininess: 50,
 		side: THREE.DoubleSide
 	});
 	// 法線ベクトル
-	brain.computeFaceNormals();
-	brain.computeVertexNormals();
+	niku.computeFaceNormals();
+	niku.computeVertexNormals();
 	// メッシュオブジェクト作成
-	var brainMesh = new THREE.Mesh(brain, brainMaterial);
-	brainMesh.position.set(0, 0, 0.5 * thickness);
-	//brainMesh.castShadow = true;
-	brainMesh.receiveShadow = true;
+	var nikuMesh = new THREE.Mesh(niku, nikuMaterial);
+	nikuMesh.position.set(0, 0, 0.5 * thickness);
+	//nikuMesh.castShadow = true;
+	nikuMesh.receiveShadow = true;
 
 	// 床オブジェクトの作成
 	var plane = new THREE.Mesh(
@@ -110,7 +118,7 @@ $(document).ready(function () {
 
 
 	// メッシュをsceneへ追加
-	scene.add(brainMesh);
+	scene.add(nikuMesh);
 	scene.add(plane);
 
 	// FEMの境界条件
@@ -134,19 +142,19 @@ $(document).ready(function () {
 
 		fem.calcDynamicDeformation(0.1);
 		for(var i = 0; i < fem.posNum; i++) {
-			brain.vertices[i].x = fem.pos[i][0];
-			brain.vertices[i].y = fem.pos[i][1];
-			brain.vertices[i].z = 0.5 * thickness;
+			niku.vertices[i].x = fem.pos[i][0];
+			niku.vertices[i].y = fem.pos[i][1];
+			niku.vertices[i].z = 0.5 * thickness;
 		}
 		for(var i = 0; i < fem.posNum; i++) {
-			brain.vertices[i + fem.posNum].x = fem.pos[i][0];
-			brain.vertices[i + fem.posNum].y = fem.pos[i][1];
-			brain.vertices[i + fem.posNum].z = -0.5 * thickness;
+			niku.vertices[i + fem.posNum].x = fem.pos[i][0];
+			niku.vertices[i + fem.posNum].y = fem.pos[i][1];
+			niku.vertices[i + fem.posNum].z = -0.5 * thickness;
 		}
-		brain.computeFaceNormals();
-		brain.computeVertexNormals();
-		brain.verticesNeedUpdate = true;
-		brain.normalsNeedUpdate = true;
+		niku.computeFaceNormals();
+		niku.computeVertexNormals();
+		niku.verticesNeedUpdate = true;
+		niku.normalsNeedUpdate = true;
 
 		cameraCtrl.update();
 
